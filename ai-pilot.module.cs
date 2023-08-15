@@ -31,7 +31,8 @@ namespace SpaceEngineers.Luisau.AiPilotModule
      * Author: ErickXavier (https://steamcommunity.com/id/ErickXavier/)
      * Created: 14 August 2023
      * Version: 2023.08.15
-     * Collaborators: Luisau (Thanks for the template!)
+     * Contributors:
+     * - Luisau (Thanks for the template!) (https://github.com/lpenap/luisau-space-engineers/)
      *
      * DESCRIPTION:
      *
