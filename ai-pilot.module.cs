@@ -30,7 +30,7 @@ namespace SpaceEngineers.Luisau.AiPilotModule
   * Script Name: AI Pilot Module
   * Author: ErickXavier (https://steamcommunity.com/id/ErickXavier/)
   * Created: 14 August 2023
-  * Version: 2023.08.15
+  * Version: 2023.08.16
   * Contributors:
   * - Luisau (Thanks for the template!) (https://github.com/lpenap/luisau-space-engineers/)
   *

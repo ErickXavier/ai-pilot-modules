@@ -62,12 +62,12 @@ Add shortcuts to the Programmable Block on your hotbar with the following comman
 
 - ErickXavier ([Steam Profile](https://steamcommunity.com/id/ErickXavier/))
 - Contributors:
-  - Luisau (Thanks for the template!)
+  - Luisau (Thanks for the [template](https://github.com/lpenap/luisau-space-engineers/)!)
 
 ### Version
 
 - Created: 14 August 2023
-- Version: 2023.08.15
+- Version: 2023.08.16
 
 ### License
 
@@ -76,6 +76,8 @@ Please refer to the license information provided by the author or the game's EUL
 ### Support and Contributions
 
 For support, issues, or contributions, please contact the author or follow the guidelines provided by the game's community.
+
+Link to the Repository: https://github.com/ErickXavier/ai-pilot-modules
 
 ### Disclaimer
 
