@@ -27,41 +27,41 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     // Your code goes below this line
 
     /**
-     * Script Name: AI Pilot Module
-     * Author: ErickXavier (https://steamcommunity.com/id/ErickXavier/)
-     * Created: 14 August 2023
-     * Version: 2023.08.15
-     * Contributors:
-     * - Luisau (Thanks for the template!) (https://github.com/lpenap/luisau-space-engineers/)
-     *
-     * DESCRIPTION:
-     *
-     * This script provides an AI piloting system for Space Engineers.
-     * It allows the user to record paths, save paths, and automate flight through
-     * various waypoints (the end of each path). The script is configurable to some extent to suit individual needs.
-     *
-     * INSTRUCTIONS:
-     *
-     * The script is meant to be run on a programmable block. It requires a remote control block and an LCD panel.
-     * The remote control block must have the configured tag bellow in its name. The LCD panel must also have the configured tag bellow in its name.
-     * The script can be configured by changing the configurable variables below.
-     *
-     * To be able navigate on the interface, add shortcuts on your hotbar to this Programmable Block with the following commands:
-     * - up
-     * - down
-     * - set
-     *
-     * Other commands are also available:
-     * - save_home
-     * - record
-     * - stop_record
-     * - delete_path [PATHNAME]
-     * - go_home
-     * - fly_path [PATHNAME]
-     * - fly_all
-     * - wipe_all
-     * - clear_warning
-     */
+  * Script Name: AI Pilot Module
+  * Author: ErickXavier (https://steamcommunity.com/id/ErickXavier/)
+  * Created: 14 August 2023
+  * Version: 2023.08.15
+  * Contributors:
+  * - Luisau (Thanks for the template!) (https://github.com/lpenap/luisau-space-engineers/)
+  *
+  * DESCRIPTION:
+  *
+  * This script provides an AI piloting system for Space Engineers.
+  * It allows the user to record paths, save paths, and automate flight through
+  * various waypoints (the end of each path). The script is configurable to some extent to suit individual needs.
+  *
+  * INSTRUCTIONS:
+  *
+  * The script is meant to be run on a programmable block. It requires a remote control block and an LCD panel.
+  * The remote control block must have the configured tag bellow in its name. The LCD panel must also have the configured tag bellow in its name.
+  * The script can be configured by changing the configurable variables below.
+  *
+  * To be able navigate on the interface, add shortcuts on your hotbar to this Programmable Block with the following commands:
+  * - up
+  * - down
+  * - set
+  *
+  * Other commands are also available:
+  * - save_home
+  * - record
+  * - stop_record
+  * - delete_path [PATHNAME]
+  * - go_home
+  * - fly_path [PATHNAME]
+  * - fly_all
+  * - wipe_all
+  * - clear_warning
+  */
 
     // ------------ Configurable Variables ------------
     const string BLOCK_TAG = "[AIP]"; // Tag used to identify blocks used by the script
@@ -98,19 +98,19 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     IMyTextPanel _lcd; // LCD panel for displaying information
 
     /**
-     * // The constructor, called only once every session and
-     * // always before any other method is called. Use it to
-     * // initialize your script.
-     * //
-     * // The constructor is optional and can be removed if not
-     * // needed.
-     * //
-     * // It's recommended to set RuntimeInfo.UpdateFrequency
-     * // here, which will allow your script to run itself without a
-     * // timer block.
-     *
-     * Initialization function for setting up necessary blocks and variables.
-     */
+      * // The constructor, called only once every session and
+      * // always before any other method is called. Use it to
+      * // initialize your script.
+      * //
+      * // The constructor is optional and can be removed if not
+      * // needed.
+      * //
+      * // It's recommended to set RuntimeInfo.UpdateFrequency
+      * // here, which will allow your script to run itself without a
+      * // timer block.
+      *
+      * Initialization function for setting up necessary blocks and variables.
+      */
     public Program()
     {
       Runtime.UpdateFrequency = UpdateFrequency.Update10;
@@ -118,6 +118,7 @@ namespace SpaceEngineers.Luisau.AiPilotModule
       {
         _remoteControl = FindBlockByTag<IMyRemoteControl>(BLOCK_TAG);
         _lcd = FindBlockByTag<IMyTextPanel>(BLOCK_TAG);
+        _lcd.ContentType = ContentType.TEXT_AND_IMAGE;
 
         GetSavedHomeLocation();
         GetSavedPaths();
@@ -131,8 +132,8 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /*
-     * Get Saved Home Location from CustomData
-     */
+      * Get Saved Home Location from CustomData
+      */
     public void GetSavedHomeLocation()
     {
       string[] lines = GetCustomDataLines();
@@ -153,8 +154,8 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /*
-     * Get Saved Paths from CustomData
-     */
+      * Get Saved Paths from CustomData
+      */
     public void GetSavedPaths()
     {
       // check if there are paths saved in the custom data
@@ -198,7 +199,7 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /*
-     * Gets CustomData lines split by \n
+      * Gets CustomData lines split by \n
     */
     string[] GetCustomDataLines()
     {
@@ -206,10 +207,10 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Finds the first block of type T with the specified tag.
-     * @param tag The tag to search for.
-     * @return The first block of type T with the specified tag.
-     */
+      * Finds the first block of type T with the specified tag.
+      * @param tag The tag to search for.
+      * @return The first block of type T with the specified tag.
+      */
     T FindBlockByTag<T>(string tag) where T : class
     {
       try
@@ -226,9 +227,9 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Main update function.
-     * Records path if recording is enabled and updates the interface.
-     */
+      * Main update function.
+      * Records path if recording is enabled and updates the interface.
+      */
     public void Update()
     {
       try
@@ -246,8 +247,8 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Save info to PB Custom Data
-     */
+      * Save info to PB Custom Data
+      */
     public void SaveCustomData(string varName, string data)
     {
       // save it as a variable called HOME inside the programmable block custom data
@@ -279,7 +280,7 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Saves Home location
+      * Saves Home location
       */
     public void SaveHome()
     {
@@ -296,8 +297,8 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Records the current path and saves it.
-     */
+      * Records the current path and saves it.
+      */
     public void RecordPath()
     {
       try
@@ -311,8 +312,8 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Stops recording the current path and saves it.
-     */
+      * Stops recording the current path and saves it.
+      */
     public void StopRecordingPath()
     {
       try
@@ -339,8 +340,8 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Goes to the home location.
-     */
+      * Goes to the home location.
+      */
     public void GoHome()
     {
       try
@@ -382,9 +383,9 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Goes to the specified path.
-     * @param pathName The name of the path to go to.
-     */
+      * Goes to the specified path.
+      * @param pathName The name of the path to go to.
+      */
     public void FlyPath(string pathName)
     {
       try
@@ -439,8 +440,8 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Flies through all paths and returns home.
-     */
+      * Flies through all paths and returns home.
+      */
     public void FlyAllPathsAndReturnHome()
     {
       try
@@ -469,9 +470,9 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Deletes the specified path.
-     * @param pathName The name of the path to delete.
-     */
+      * Deletes the specified path.
+      * @param pathName The name of the path to delete.
+      */
     public void DeletePath(string pathName)
     {
       try
@@ -495,8 +496,8 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Wipes all data.
-     */
+      * Wipes all data.
+      */
     public void WipeAllData()
     {
       try
@@ -513,12 +514,12 @@ namespace SpaceEngineers.Luisau.AiPilotModule
 
     public void AddSeparator(StringBuilder sb)
     {
-      sb.AppendLine("---------");
+      sb.AppendLine("---------------------------");
     }
 
     /**
-     * Updates the interface.
-     */
+      * Updates the interface.
+      */
     public void UpdateInterface()
     {
       try
@@ -539,6 +540,11 @@ namespace SpaceEngineers.Luisau.AiPilotModule
           sb.AppendLine("Recording Path...");
         }
 
+        if (_selectedOption == 0)
+        {
+          _selectedOption = 0;
+        }
+
         AddSeparator(sb);
         if (_selectingPath)
         {
@@ -556,13 +562,13 @@ namespace SpaceEngineers.Luisau.AiPilotModule
           string pathString = _isRecordingPath ? "Stop Recording" : "Record Path";
           string[] options = new string[]
           {
-    "Save Home", // 0
-    pathString, // 1
-    "Go Home", // 2
-    "Fly Path", // 3
-    "Fly All Paths and Return Home", // 4
-    "Delete Path", // 5
-    "Wipe all Data" // 6
+"Save Home", // 0
+pathString, // 1
+"Go Home", // 2
+"Fly Path", // 3
+"Fly All Paths and Return Home", // 4
+"Delete Path", // 5
+"Wipe all Data" // 6
           };
           numberOfOptions = options.Length;
           for (int i = 0; i < numberOfOptions; i++)
@@ -583,10 +589,10 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Updates the LCD with the specified string.
-     * @param str The string to display on the LCD.
-     * @param isWarning Whether or not the message is a warning.
-     */
+      * Updates the LCD with the specified string.
+      * @param str The string to display on the LCD.
+      * @param isWarning Whether or not the message is a warning.
+      */
     public void ShowWarning(string str)
     {
       try
@@ -601,8 +607,8 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Removes the warning message.
-     */
+      * Removes the warning message.
+      */
     public void RemoveWarning()
     {
       try
@@ -627,20 +633,24 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * // The main entry point of the script, invoked every time
-     * // one of the programmable block's Run actions are invoked,
-     * // or the script updates itself. The updateSource argument
-     * // describes where the update came from.
-     * // The method itself is required, but the arguments above
-     * // can be removed if not needed.
-     *
-     * Handles input from the user.
-     * @param input The input from the user.
-     */
+      * // The main entry point of the script, invoked every time
+      * // one of the programmable block's Run actions are invoked,
+      * // or the script updates itself. The updateSource argument
+      * // describes where the update came from.
+      * // The method itself is required, but the arguments above
+      * // can be removed if not needed.
+      *
+      * Handles input from the user.
+      * @param input The input from the user.
+      */
     public void Main(string argument, UpdateType updateSource)
     {
       try
       {
+        if (argument == "")
+        {
+          return;
+        }
         if (warningMessage != "")
         {
           RemoveWarning();
@@ -672,9 +682,9 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Handles the go to path command.
-     * @param input The input from the user.
-     */
+      * Handles the go to path command.
+      * @param input The input from the user.
+      */
     public void HandleFlyPath(string input)
     {
       try
@@ -695,9 +705,9 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Handles the delete path command.
-     * @param input The input from the user.
-     */
+      * Handles the delete path command.
+      * @param input The input from the user.
+      */
     public void HandleDeletePath(string input)
     {
       try
@@ -718,12 +728,11 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Checks if the current selection is valid.
-     * @return Whether or not the current selection is valid.
-     */
-    bool IsValidSelection()
+      * Checks if the current selection is valid.
+      * @return Whether or not the current selection is valid.
+      */
+    bool IsValidSelection(int selectedOption)
     {
-      int selectedOption = (_selectedOption - 1 + numberOfOptions) % numberOfOptions;
       string[] screenLines = _lcd.GetText().Split('\n');
       string selectedLine = screenLines[selectedOption];
       bool isSelectingOption = selectedLine.StartsWith("[") && selectedLine.EndsWith("]");
@@ -731,45 +740,15 @@ namespace SpaceEngineers.Luisau.AiPilotModule
       return isSelectingOption;
     }
 
-    /**
-     * Checks how many lines to ignore when selecting an option.
-     * @return The number of lines to ignore.
-     */
-    int LinesToIgnore()
-    {
-      int linesToIgnore = 1; // ignoring the title
-                             // checks if warningMessage is empty
-      if (warningMessage != "")
-      {
-        linesToIgnore += 3; // ignoring the warning title, warning message and separator
-      }
-      // checks if recording path
-      if (_isRecordingPath)
-      {
-        linesToIgnore += 2; // ignoring the recording path message and separator
-      }
-      // checks if selecting path
-      if (_selectingPath)
-      {
-        linesToIgnore += 2; // ignoring the selecting path message and separator
-      }
-
-      return linesToIgnore;
-    }
 
     /**
-     * Handles the up command.
-     */
+      * Handles the up command.
+      */
     public void HandleUp()
     {
       try
       {
-        if (!IsValidSelection())
-        {
-          return;
-        }
-
-        _selectedOption = (_selectedOption - 1 + numberOfOptions) % numberOfOptions + LinesToIgnore();
+        _selectedOption = (_selectedOption - 1 + numberOfOptions) % numberOfOptions;
       }
       catch (Exception e)
       {
@@ -778,17 +757,13 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Handles the down command.
-     */
+      * Handles the down command.
+      */
     public void HandleDown()
     {
       try
       {
-        if (!IsValidSelection())
-        {
-          return;
-        }
-        _selectedOption = (_selectedOption + 1) % numberOfOptions + LinesToIgnore();
+        _selectedOption = (_selectedOption + 1) % numberOfOptions;
       }
       catch (Exception e)
       {
@@ -797,9 +772,9 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /**
-     * Handles the set command.
-     * @param input The input from the user.
-     */
+      * Handles the set command.
+      * @param input The input from the user.
+      */
     public void HandleSet(string input)
     {
       try
@@ -842,10 +817,10 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     }
 
     /*
-     * Parses a string into a Vector3D.
-     * @param input The string to parse.
-     * @return The parsed Vector3D.
-     */
+      * Parses a string into a Vector3D.
+      * @param input The string to parse.
+      * @return The parsed Vector3D.
+      */
     public Vector3D ParseVector3D(string input)
     {
       try
