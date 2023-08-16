@@ -59,6 +59,8 @@ namespace SpaceEngineers.Luisau.AiPilotModule
   * - go_home
   * - fly_path [PATHNAME]
   * - fly_all
+  * - stop_flying
+  * - continue_flying
   * - wipe_all
   * - clear_warning
   */
@@ -68,6 +70,8 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     const string PATH_PREFIX = "Path"; // Prefix used to identify paths in CustomData
     const string PATH_COUNT_VAR = "PathCount"; // Variable name used to store the number of paths in CustomData
     const string HOME_VAR = "HOME"; // Variable name used to store the home location in CustomData
+    const int MAX_SPEED = 30; // The maximum speed of the remote control
+    const float FONT_SIZE = .6f; // The font size of the LCD panel
 
     // ------------ Non-Configurable Variables ------------
     int _selectedOption = 0; // The currently selected option
@@ -93,6 +97,9 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     List<Vector3D> _currentPath = new List<Vector3D>(); // Path being recorded
     bool _isRecordingPath = false; // Status of path recording
     string warningMessage = ""; // Warning message to display on LCD
+    bool _isFlyingPath = false; // Whether or not the user is flying a path
+    bool _isFlyingHome = false; // Whether or not the user is flying a path
+                                // Vector3D _currentWaypoint = Vector3D.Zero; // The current waypoint being flown
 
     IMyRemoteControl _remoteControl; // Remote control block
     IMyTextPanel _lcd; // LCD panel for displaying information
@@ -116,14 +123,58 @@ namespace SpaceEngineers.Luisau.AiPilotModule
       Runtime.UpdateFrequency = UpdateFrequency.Update10;
       try
       {
-        _remoteControl = FindBlockByTag<IMyRemoteControl>(BLOCK_TAG);
-        _lcd = FindBlockByTag<IMyTextPanel>(BLOCK_TAG);
-        _lcd.ContentType = ContentType.TEXT_AND_IMAGE;
+        InitRemoteControl();
+        InitLCD();
 
-        GetSavedHomeLocation();
-        GetSavedPaths();
+        LoadHomeLocation();
+        LoadSavedPaths();
 
         UpdateInterface();
+      }
+      catch (Exception e)
+      {
+        ShowWarning(e.ToString());
+      }
+    }
+
+    public void InitRemoteControl()
+    {
+      try
+      {
+        _remoteControl = FindBlockByTag<IMyRemoteControl>(BLOCK_TAG);
+        if (_remoteControl == null)
+        {
+          ShowWarning("Remote Control not found.");
+          return;
+        }
+        // prepare it to safe flight
+        _remoteControl.ClearWaypoints();
+        _remoteControl.SetCollisionAvoidance(true);
+        _remoteControl.SetDockingMode(true);
+        _remoteControl.SetAutoPilotEnabled(false);
+        _remoteControl.SpeedLimit = MAX_SPEED;
+        _remoteControl.SetValue("PrecisionMode", true);
+        _remoteControl.FlightMode = FlightMode.OneWay;
+        _remoteControl.Direction = Base6Directions.Direction.Forward;
+      }
+      catch (Exception e)
+      {
+        ShowWarning(e.ToString());
+      }
+    }
+
+    public void InitLCD()
+    {
+      try
+      {
+        _lcd = FindBlockByTag<IMyTextPanel>(BLOCK_TAG);
+        if (_lcd == null)
+        {
+          AddWarning("LCD not found.");
+          return;
+        }
+        _lcd.ContentType = ContentType.TEXT_AND_IMAGE;
+        _lcd.FontSize = FONT_SIZE;
       }
       catch (Exception e)
       {
@@ -134,7 +185,7 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     /*
       * Get Saved Home Location from CustomData
       */
-    public void GetSavedHomeLocation()
+    public void LoadHomeLocation()
     {
       string[] lines = GetCustomDataLines();
       foreach (string line in lines)
@@ -156,7 +207,7 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     /*
       * Get Saved Paths from CustomData
       */
-    public void GetSavedPaths()
+    public void LoadSavedPaths()
     {
       // check if there are paths saved in the custom data
       string[] lines = GetCustomDataLines();
@@ -286,9 +337,10 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     {
       try
       {
+        // set the home location to the current position of the remote control
         _homeLocation = _remoteControl.GetPosition();
-        SaveCustomData(HOME_VAR, _homeLocation.ToString());
-
+        ShowWarning("Home location set to: " + _homeLocation.ToString());
+        // SaveCustomData(HOME_VAR, _homeLocation.ToString());
       }
       catch (Exception e)
       {
@@ -319,19 +371,19 @@ namespace SpaceEngineers.Luisau.AiPilotModule
       try
       {
         _isRecordingPath = false;
+        // check if _currentPath is valid and save it to the paths and customdata
         if (_currentPath.Count > 0)
         {
-          string pathName = PATH_PREFIX + _paths.Count;
+          string pathName = PATH_PREFIX + _pathCount;
           _paths.Add(pathName, new Path(pathName, _currentPath));
+          _pathCount++;
+          SaveCustomData(PATH_COUNT_VAR, _pathCount.ToString());
+          foreach (Vector3D waypoint in _currentPath)
+          {
+            SaveCustomData(pathName, waypoint.ToString());
+          }
           _currentPath.Clear();
-          SaveCustomData(pathName, _paths[pathName].Waypoints.ToString());
-          _pathCount = _paths.Count;
         }
-        else
-        {
-          _pathCount = 0;
-        }
-        SaveCustomData(PATH_COUNT_VAR, _pathCount.ToString());
       }
       catch (Exception e)
       {
@@ -375,11 +427,20 @@ namespace SpaceEngineers.Luisau.AiPilotModule
           _remoteControl.AddWaypoint(_homeLocation, HOME_VAR);
         }
         _remoteControl.SetAutoPilotEnabled(true);
+        _isFlyingHome = true;
+        _isFlyingPath = false;
       }
       catch (Exception e)
       {
         ShowWarning(e.ToString());
       }
+    }
+
+    public void StopFlying()
+    {
+      _isFlyingHome = false;
+      _isFlyingPath = false;
+      _remoteControl.SetAutoPilotEnabled(false);
     }
 
     /**
@@ -394,43 +455,20 @@ namespace SpaceEngineers.Luisau.AiPilotModule
         // get current position of the remote control
         _remoteControl.SetAutoPilotEnabled(false);
         _remoteControl.ClearWaypoints();
-        // check if remoteControl is close to the Home location
-        if (_remoteControl.GetPosition().Equals(_homeLocation))
+        Vector3D currentPosition = _remoteControl.GetPosition();
+        _remoteControl.AddWaypoint(currentPosition, "Current Position");
+        // get the selected IP, if any, and add it to the waypoints
+        if (_selectedPath != "")
         {
-          // get the selected IP, if any, reverse the path and add it to the waypoints
-          if (_selectedPath != "")
+          Path selectedPath = _paths[_selectedPath];
+          foreach (Vector3D waypoint in selectedPath.Waypoints)
           {
-            Path selectedPath = _paths[_selectedPath];
-            selectedPath.Waypoints.Reverse();
-            foreach (Vector3D waypoint in selectedPath.Waypoints)
-            {
-              _remoteControl.AddWaypoint(waypoint, _selectedPath);
-            }
-          }
-          else
-          {
-            _remoteControl.AddWaypoint(_homeLocation, HOME_VAR);
+            _remoteControl.AddWaypoint(waypoint, _selectedPath);
           }
         }
-        else
-        {
-          // get the current position of the remote control
-          _remoteControl.AddWaypoint(_remoteControl.GetPosition(), "Current Position");
-          // get the selected IP, if any, reverse the path and add it to the waypoints
-          if (_selectedPath != "")
-          {
-            Path selectedPath = _paths[_selectedPath];
-            selectedPath.Waypoints.Reverse();
-            foreach (Vector3D waypoint in selectedPath.Waypoints)
-            {
-              _remoteControl.AddWaypoint(waypoint, _selectedPath);
-            }
-          }
-          else
-          {
-            _remoteControl.AddWaypoint(_homeLocation, HOME_VAR);
-          }
-        }
+        _remoteControl.SetAutoPilotEnabled(true);
+        _isFlyingPath = true;
+        _isFlyingHome = false;
 
       }
       catch (Exception e)
@@ -549,6 +587,8 @@ namespace SpaceEngineers.Luisau.AiPilotModule
         if (_selectingPath)
         {
           sb.AppendLine("Select Path:");
+          AddSeparator(sb);
+          // sb.AppendLine("[Back]"); // TODO: Implement Back to the main menu option
           int i = 0;
           numberOfOptions = _paths.Count;
           foreach (var pathName in _paths.Keys)
@@ -559,16 +599,18 @@ namespace SpaceEngineers.Luisau.AiPilotModule
         }
         else
         {
-          string pathString = _isRecordingPath ? "Stop Recording" : "Record Path";
+          string recordingString = _isRecordingPath ? "Stop Recording" : "Record Path";
+          string flyingHomeString = _isFlyingHome ? "Stop Flying" : "Go Home";
+          string flyingPathString = _isFlyingPath ? "Stop Flying" : "Fly Path";
           string[] options = new string[]
           {
-"Save Home", // 0
-pathString, // 1
-"Go Home", // 2
-"Fly Path", // 3
-"Fly All Paths and Return Home", // 4
-"Delete Path", // 5
-"Wipe all Data" // 6
+        "Save Home", // 0
+        recordingString, // 1
+        flyingHomeString, // 2
+        flyingPathString, // 3
+        "Fly All Paths and Return Home", // 4
+        "Delete Path", // 5
+        "Wipe all Data" // 6
           };
           numberOfOptions = options.Length;
           for (int i = 0; i < numberOfOptions; i++)
@@ -576,8 +618,16 @@ pathString, // 1
             sb.AppendLine(i == _selectedOption ? $"> [{options[i]}]" : $"[{options[i]}]");
           }
         }
+
+        AddSeparator(sb);
+        string _destination = _isFlyingHome ? "Home" : "Path";
+        sb.AppendLine(_isFlyingPath || _isFlyingHome ? $"Status: Flying {_destination}" : "Status: Idle");
         AddSeparator(sb);
 
+        if (_lcd.ContentType != ContentType.TEXT_AND_IMAGE)
+        {
+          _lcd.ContentType = ContentType.TEXT_AND_IMAGE;
+        }
         _lcd.WriteText(sb.ToString());
         // write the text to the pb console
         Echo(sb.ToString());
@@ -604,6 +654,11 @@ pathString, // 1
       {
         Echo(e.ToString());
       }
+    }
+
+    public void AddWarning(string str)
+    {
+      warningMessage += $"\n{str}";
     }
 
     /**
@@ -664,6 +719,8 @@ pathString, // 1
           case "go_home": GoHome(); break;
           case "fly_path": HandleFlyPath(argument); break;
           case "fly_all": FlyAllPathsAndReturnHome(); break;
+          case "stop_flying": StopFlying(); break;
+          case "continue_flying": _isFlyingPath = true; break;
           case "wipe_all": WipeAllData(); break;
           case "up": HandleUp(); break;
           case "down": HandleDown(); break;
@@ -792,7 +849,7 @@ pathString, // 1
           switch (_selectedOption)
           {
             case 0: SaveHome(); break;
-            case 1:
+            case 1: // toggle recording
               if (_isRecordingPath)
               {
                 StopRecordingPath();
@@ -802,8 +859,26 @@ pathString, // 1
                 RecordPath();
               }
               break;
-            case 2: GoHome(); break;
-            case 3: _selectingPath = true; break; // Enable path selection
+            case 2:
+              if (_isFlyingHome)
+              {
+                StopFlying();
+              }
+              else
+              {
+                GoHome();
+              }
+              break;
+            case 3:
+              if (_isFlyingPath)
+              {
+                StopFlying();
+              }
+              else
+              {
+                _selectingPath = true;
+              }
+              break; // Enable path selection
             case 4: FlyAllPathsAndReturnHome(); break;
             case 5: _selectingPath = true; break; // Enable path selection for deletion
             case 6: WipeAllData(); break;
