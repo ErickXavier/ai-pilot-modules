@@ -77,8 +77,8 @@ Please refer to the license information provided by the author or the game's EUL
 
 For support, issues, or contributions, please contact the author or follow the guidelines provided by the game's community.
 
-Link to the Repository: https://github.com/ErickXavier/ai-pilot-modules
-Link to the Workshop: https://steamcommunity.com/sharedfiles/filedetails/?id=3021091164
+- Link to the Repository: https://github.com/ErickXavier/ai-pilot-modules
+- Link to the Workshop: https://steamcommunity.com/sharedfiles/filedetails/?id=3021091164
 
 ### Disclaimer
 
