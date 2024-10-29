@@ -17,7 +17,7 @@ using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
 // Change this namespace
-namespace SpaceEngineers.Luisau.AiPilotModule
+namespace SpaceEngineers.UWBlockPrograms.AiPilotModule
 {
   public sealed class Program : MyGridProgram
   {
@@ -75,7 +75,7 @@ namespace SpaceEngineers.Luisau.AiPilotModule
 
     // ------------ Non-Configurable Variables ------------
     int _selectedOption = 0; // The currently selected option
-    bool _selectingPath = false; // Whether or not the user is selecting an path
+    bool _selectingPath = false; // Whether or not the user is selecting a path
     string _selectedPath = ""; // The currently selected path
     int numberOfOptions = 0; // The number of options available
 
@@ -99,7 +99,6 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     string warningMessage = ""; // Warning message to display on LCD
     bool _isFlyingPath = false; // Whether or not the user is flying a path
     bool _isFlyingHome = false; // Whether or not the user is flying a path
-                                // Vector3D _currentWaypoint = Vector3D.Zero; // The current waypoint being flown
 
     IMyRemoteControl _remoteControl; // Remote control block
     IMyTextPanel _lcd; // LCD panel for displaying information
@@ -112,9 +111,9 @@ namespace SpaceEngineers.Luisau.AiPilotModule
       * // The constructor is optional and can be removed if not
       * // needed.
       * //
-      * // It's recommended to set RuntimeInfo.UpdateFrequency
-      * // here, which will allow your script to run itself without a
-      * // timer block.
+      * It's recommended to set RuntimeInfo.UpdateFrequency
+      * here, which will allow your script to run itself without a
+      * timer block.
       *
       * Initialization function for setting up necessary blocks and variables.
       */
@@ -147,7 +146,7 @@ namespace SpaceEngineers.Luisau.AiPilotModule
           ShowWarning("Remote Control not found.");
           return;
         }
-        // prepare it to safe flight
+        // prepare it for safe flight
         _remoteControl.ClearWaypoints();
         _remoteControl.SetCollisionAvoidance(true);
         _remoteControl.SetDockingMode(true);
@@ -285,7 +284,7 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     {
       try
       {
-        if (_isRecordingPath && (_currentPath.Count == 0 || _currentPath.Last() != _remoteControl.GetPosition()))
+        if (_remoteControl != null && _isRecordingPath && (_currentPath.Count == 0 || _currentPath.Last() != _remoteControl.GetPosition()))
         {
           _currentPath.Add(_remoteControl.GetPosition());
         }
@@ -338,9 +337,16 @@ namespace SpaceEngineers.Luisau.AiPilotModule
       try
       {
         // set the home location to the current position of the remote control
-        _homeLocation = _remoteControl.GetPosition();
-        ShowWarning("Home location set to: " + _homeLocation.ToString());
-        // SaveCustomData(HOME_VAR, _homeLocation.ToString());
+        if (_remoteControl != null)
+        {
+          _homeLocation = _remoteControl.GetPosition();
+          ShowWarning("Home location set to: " + _homeLocation.ToString());
+          SaveCustomData(HOME_VAR, _homeLocation.ToString());
+        }
+        else
+        {
+          ShowWarning("Remote Control is not initialized.");
+        }
       }
       catch (Exception e)
       {
@@ -398,37 +404,43 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     {
       try
       {
-        _remoteControl.SetAutoPilotEnabled(false);
-        _remoteControl.ClearWaypoints();
-        // set the current position of the remote control to a variable
-        Vector3D currentPosition = _remoteControl.GetPosition();
-        _remoteControl.AddWaypoint(currentPosition, "Current Position");
-
-        // get the selected IP, if any, reverse the path and add it to the waypoints
-        if (_selectedPath != "")
+        if (_remoteControl != null)
         {
-          Path selectedPath = _paths[_selectedPath];
-          // get the closest path waypoint to the remoteControl, start a new list with that waypoint, add the rest of the waypoints to the list, reverse the list and add it to the remoteControl
-          Vector3D closestWaypoint = selectedPath.Waypoints.OrderBy(x => Vector3D.Distance(x, currentPosition)).First();
-          int closestWaypointIndex = selectedPath.Waypoints.IndexOf(closestWaypoint);
-          List<Vector3D> waypoints = selectedPath.Waypoints.GetRange(closestWaypointIndex, selectedPath.Waypoints.Count - closestWaypointIndex);
-          waypoints.Reverse();
-          foreach (Vector3D waypoint in waypoints)
+          _remoteControl.SetAutoPilotEnabled(false);
+          _remoteControl.ClearWaypoints();
+          // set the current position of the remote control to a variable
+          Vector3D currentPosition = _remoteControl.GetPosition();
+          _remoteControl.AddWaypoint(currentPosition, "Current Position");
+
+          // get the selected path, if any, reverse the path and add it to the waypoints
+          if (!string.IsNullOrEmpty(_selectedPath) && _paths.ContainsKey(_selectedPath))
           {
-            _remoteControl.AddWaypoint(waypoint, _selectedPath);
+            Path selectedPath = _paths[_selectedPath];
+            // get the closest path waypoint to the remoteControl, start a new list with that waypoint, add the rest of the waypoints to the list, reverse the list and add it to the remoteControl
+            Vector3D closestWaypoint = selectedPath.Waypoints.OrderBy(x => Vector3D.Distance(x, currentPosition)).First();
+            int closestWaypointIndex = selectedPath.Waypoints.IndexOf(closestWaypoint);
+            List<Vector3D> waypoints = selectedPath.Waypoints.GetRange(closestWaypointIndex, selectedPath.Waypoints.Count - closestWaypointIndex);
+            waypoints.Reverse();
+            foreach (Vector3D waypoint in waypoints)
+            {
+              _remoteControl.AddWaypoint(waypoint, _selectedPath);
+            }
+
+            // add the home location to the remoteControl
+            _remoteControl.AddWaypoint(_homeLocation, HOME_VAR);
           }
-
-          // add the home location to the remoteControl
-          _remoteControl.AddWaypoint(_homeLocation, HOME_VAR);
-
+          else
+          {
+            _remoteControl.AddWaypoint(_homeLocation, HOME_VAR);
+          }
+          _remoteControl.SetAutoPilotEnabled(true);
+          _isFlyingHome = true;
+          _isFlyingPath = false;
         }
         else
         {
-          _remoteControl.AddWaypoint(_homeLocation, HOME_VAR);
+          ShowWarning("Remote Control is not initialized.");
         }
-        _remoteControl.SetAutoPilotEnabled(true);
-        _isFlyingHome = true;
-        _isFlyingPath = false;
       }
       catch (Exception e)
       {
@@ -438,9 +450,16 @@ namespace SpaceEngineers.Luisau.AiPilotModule
 
     public void StopFlying()
     {
-      _isFlyingHome = false;
-      _isFlyingPath = false;
-      _remoteControl.SetAutoPilotEnabled(false);
+      if (_remoteControl != null)
+      {
+        _isFlyingHome = false;
+        _isFlyingPath = false;
+        _remoteControl.SetAutoPilotEnabled(false);
+      }
+      else
+      {
+        ShowWarning("Remote Control is not initialized.");
+      }
     }
 
     /**
@@ -451,25 +470,31 @@ namespace SpaceEngineers.Luisau.AiPilotModule
     {
       try
       {
-        _selectedPath = pathName;
-        // get current position of the remote control
-        _remoteControl.SetAutoPilotEnabled(false);
-        _remoteControl.ClearWaypoints();
-        Vector3D currentPosition = _remoteControl.GetPosition();
-        _remoteControl.AddWaypoint(currentPosition, "Current Position");
-        // get the selected IP, if any, and add it to the waypoints
-        if (_selectedPath != "")
+        if (_remoteControl != null)
         {
-          Path selectedPath = _paths[_selectedPath];
-          foreach (Vector3D waypoint in selectedPath.Waypoints)
+          _selectedPath = pathName;
+          // get current position of the remote control
+          _remoteControl.SetAutoPilotEnabled(false);
+          _remoteControl.ClearWaypoints();
+          Vector3D currentPosition = _remoteControl.GetPosition();
+          _remoteControl.AddWaypoint(currentPosition, "Current Position");
+          // get the selected path, if any, and add it to the waypoints
+          if (!string.IsNullOrEmpty(_selectedPath) && _paths.ContainsKey(_selectedPath))
           {
-            _remoteControl.AddWaypoint(waypoint, _selectedPath);
+            Path selectedPath = _paths[_selectedPath];
+            foreach (Vector3D waypoint in selectedPath.Waypoints)
+            {
+              _remoteControl.AddWaypoint(waypoint, _selectedPath);
+            }
           }
+          _remoteControl.SetAutoPilotEnabled(true);
+          _isFlyingPath = true;
+          _isFlyingHome = false;
         }
-        _remoteControl.SetAutoPilotEnabled(true);
-        _isFlyingPath = true;
-        _isFlyingHome = false;
-
+        else
+        {
+          ShowWarning("Remote Control is not initialized.");
+        }
       }
       catch (Exception e)
       {
@@ -489,17 +514,24 @@ namespace SpaceEngineers.Luisau.AiPilotModule
           ShowWarning("No paths recorded.");
           return;
         }
-        _remoteControl.SetAutoPilotEnabled(false);
-        _remoteControl.ClearWaypoints();
-        foreach (Path ip in _paths.Values)
+        if (_remoteControl != null)
         {
-          foreach (Vector3D waypoint in ip.Waypoints)
+          _remoteControl.SetAutoPilotEnabled(false);
+          _remoteControl.ClearWaypoints();
+          foreach (Path ip in _paths.Values)
           {
-            _remoteControl.AddWaypoint(waypoint, "IP");
+            foreach (Vector3D waypoint in ip.Waypoints)
+            {
+              _remoteControl.AddWaypoint(waypoint, "IP");
+            }
           }
+          _remoteControl.AddWaypoint(_homeLocation, HOME_VAR);
+          _remoteControl.SetAutoPilotEnabled(true);
         }
-        _remoteControl.AddWaypoint(_homeLocation, HOME_VAR);
-        _remoteControl.SetAutoPilotEnabled(true);
+        else
+        {
+          ShowWarning("Remote Control is not initialized.");
+        }
       }
       catch (Exception e)
       {
@@ -588,7 +620,6 @@ namespace SpaceEngineers.Luisau.AiPilotModule
         {
           sb.AppendLine("Select Path:");
           AddSeparator(sb);
-          // sb.AppendLine("[Back]"); // TODO: Implement Back to the main menu option
           int i = 0;
           numberOfOptions = _paths.Count;
           foreach (var pathName in _paths.Keys)
@@ -839,8 +870,8 @@ namespace SpaceEngineers.Luisau.AiPilotModule
         if (_selectingPath)
         {
           // Handle selection within paths
-          string selectedpathName = _paths.Keys.ElementAt(_selectedOption);
-          // Perform the desired action with the selected path, such as GoToPath(selectedpathName);
+          string selectedPathName = _paths.Keys.ElementAt(_selectedOption);
+          // Perform the desired action with the selected path
           _selectingPath = false; // Return to the main menu
         }
         else
